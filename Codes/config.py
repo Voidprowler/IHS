@@ -1,0 +1,12 @@
+# Thresholds
+CPU_TEMP_WARN = 80
+CPU_TEMP_CRITICAL = 90
+RAM_PERCENT_LIMIT = 90
+DISK_PERCENT_LIMIT = 95
+
+# Feature Toggles
+CHECK_NETWORK = True
+CHECK_SSD_HEALTH = True
+SCAN_INTERVAL = 2 # Seconds between checks
+
+DEBUG_SENSORS = True
