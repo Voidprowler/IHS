@@ -21,8 +21,8 @@ A Windows hardware monitoring application written in Python. It watches your sys
 
 ## Quick start
 
-1. Download or clone this repository and extract all files to one folder.
-2. Double-click `Launch_Dashboard.vbs` to open the dashboard.
+1. Download the zip from Releases.
+2. extract it, and double-click `Launch_Dashboard.vbs` to open the dashboard.
 3. Click **Yes** when Windows asks for administrator permission.
 
 If the application crashes on launch, install the Visual C++ Redistributable linked above and try again.
