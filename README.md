@@ -2,7 +2,7 @@
 
 A Windows hardware monitoring application written in Python. It watches your system's temperatures, drive health and memory use, shows them on a live dashboard, and raises desktop alerts when something needs attention.
 
-![IHS dashboard](docs/dashboard.png)
+![IHS dashboard](dashboard.png)
 
 ## Features
 
