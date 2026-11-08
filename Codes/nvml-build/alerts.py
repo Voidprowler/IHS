@@ -37,8 +37,13 @@ class AlertSystem:
       - Less severe than the current level (de-escalation): logged only,
         no toast.
       - Channel returns to normal for `clear_after` consecutive readings
-        (reported via report_ok): state is cleared, so a renewed breach
-        toasts immediately.
+        (reported via report_ok): the episode ends, but the per-severity
+        cooldown timers are KEPT. A renewed breach inside the cooldown is
+        suppressed, so a reading that hovers around a threshold cannot
+        produce a toast every few seconds. A breach at a severity that has
+        not alerted yet (a genuine escalation, e.g. WARNING then recovery
+        then CRITICAL) toasts immediately, and any breach after the
+        cooldown has elapsed toasts again.
       - Missing/stale readings: do NOT call report_ok. State is left
         untouched, so an unreliable sensor cannot reset the cooldown.
     """
@@ -55,6 +60,10 @@ class AlertSystem:
         self._clock = clock          # injectable so tests need no real waiting
         # channel -> {"severity": str, "sent_at": {severity: time}, "ok_streak": int}
         self._state = {}
+        # channel -> {severity: time}. Survives recovery so the cooldown
+        # cannot be reset by a reading that dips below the threshold for
+        # `clear_after` cycles and then breaches again.
+        self._sent_at = {}
         # what happened to the most recent notify(): sent / failed /
         # suppressed / deescalated (read by main.py for the telemetry log)
         self.last_outcome = None
@@ -111,24 +120,36 @@ class AlertSystem:
             state["severity"] = severity
             last = state["sent_at"].get(severity)
             if last is not None and (now - last) < self.cooldown:
-                counters["suppressed"] += 1
-                if self.LOG_SUPPRESSED:
-                    logging.info(
-                        f"SUPPRESSED [{channel}/{severity}] "
-                        f"{title}: {clean_message}"
-                    )
-                self.last_outcome = "suppressed"
-                return False
+                return self._suppress(counters, channel, severity,
+                                      title, clean_message)
             # First time at this severity, or its cooldown has elapsed.
             # The cooldown starts on the attempt, so a failing toast backend
             # cannot cause a retry (and a log line) on every polling cycle.
             self._mark_sent(state["sent_at"], severity, now)
             return self._deliver(title, message, clean_message, counters)
 
-        # First breach on this channel.
-        self._state[channel] = {"severity": severity, "sent_at": {}, "ok_streak": 0}
-        self._mark_sent(self._state[channel]["sent_at"], severity, now)
+        # A new episode on this channel: the first breach ever, or a renewed
+        # breach after recovery. The timers from earlier episodes still
+        # count, so a renewed breach inside the cooldown is suppressed.
+        sent_at = self._sent_at.setdefault(channel, {})
+        self._state[channel] = {"severity": severity, "sent_at": sent_at,
+                                "ok_streak": 0}
+        last = sent_at.get(severity)
+        if last is not None and (now - last) < self.cooldown:
+            return self._suppress(counters, channel, severity,
+                                  title, clean_message)
+        self._mark_sent(sent_at, severity, now)
         return self._deliver(title, message, clean_message, counters)
+
+    def _suppress(self, counters, channel, severity, title, clean_message):
+        counters["suppressed"] += 1
+        if self.LOG_SUPPRESSED:
+            logging.info(
+                f"SUPPRESSED [{channel}/{severity}] "
+                f"{title}: {clean_message}"
+            )
+        self.last_outcome = "suppressed"
+        return False
 
     @staticmethod
     def _mark_sent(sent_at, severity, now):
@@ -143,8 +164,9 @@ class AlertSystem:
         Call once per polling cycle when the channel has a VALID reading
         in the Good range. Do not call it for None/stale readings.
         Returns True on the cycle the channel's state is cleared.
-        After `clear_after` consecutive calls the channel's alert state is
-        cleared, so the next breach toasts immediately.
+        After `clear_after` consecutive calls the episode ends. The cooldown
+        timers are kept, so the next breach toasts immediately only if its
+        severity has not alerted within the cooldown.
         """
         state = self._state.get(channel)
         if state is None:

@@ -161,19 +161,22 @@ class Reference:
 
     The cooldown is tracked per severity: a level that alerted within the
     cooldown is suppressed even when the channel dipped to a lower level and
-    came back (re-escalation). A toast at one severity also counts as a
-    recent notice for every lower severity."""
+    came back (re-escalation), and even when the channel recovered and then
+    breached again (re-breach): recovery ends the episode but keeps the
+    timers. A toast at one severity also counts as a recent notice for every
+    lower severity."""
 
     def __init__(self, cooldown, clear_after):
         self.cooldown, self.clear_after = cooldown, clear_after
-        self.state = None            # {"sev", "sent_at": {sev: time}, "ok"}
-        self._undo = None            # copy of sent_at before the last send, for adopt()
+        self.state = None            # {"sev", "ok"}; None between episodes
+        self.timers = {}             # {sev: time of last toast}; survives recovery
+        self._undo = None            # copy of timers before the last send, for adopt()
 
     def _mark_sent(self, severity, t):
-        self._undo = dict(self.state["sent_at"])
+        self._undo = dict(self.timers)
         for name, rank in SEV.items():
             if 0 < rank <= SEV[severity]:
-                self.state["sent_at"][name] = t
+                self.timers[name] = t
 
     def step(self, severity, t):
         """-> (outcome, reason, elapsed_seconds_or_None)"""
@@ -188,16 +191,24 @@ class Reference:
                 return "recovered", "", None
             return "none", "recovering", None
         if self.state is None:
-            self.state = {"sev": severity, "sent_at": {}, "ok": 0}
+            first_ever = not self.timers
+            self.state = {"sev": severity, "ok": 0}
+            last = self.timers.get(severity)
+            if last is not None:
+                elapsed = (t - last).total_seconds()
+                if elapsed < self.cooldown:
+                    return "suppressed", "re-breach", elapsed
+                self._mark_sent(severity, t)
+                return "sent", "re-breach", elapsed
             self._mark_sent(severity, t)
-            return "sent", "first", None
+            return "sent", ("first" if first_ever else "escalation"), None
         self.state["ok"] = 0
         old, new = SEV[self.state["sev"]], SEV[severity]
         if new < old:
             self.state["sev"] = severity
             return "deescalated", "", None
         self.state["sev"] = severity
-        last = self.state["sent_at"].get(severity)
+        last = self.timers.get(severity)
         if last is None:
             self._mark_sent(severity, t)
             return "sent", "escalation", None
@@ -215,7 +226,7 @@ class Reference:
         if actual == "sent":
             self._mark_sent(self.state["sev"], t)
         elif actual == "suppressed" and self._undo is not None:
-            self.state["sent_at"] = dict(self._undo)
+            self.timers = dict(self._undo)
 
     @property
     def active(self):
@@ -282,7 +293,7 @@ def analyse(sessions, th, cooldown=60.0, clear_after=3, tol=0.1):
                 if expected == "sent":
                     c["coverage"][f"alert sent: {reason}"] += 1
                 elif expected == "suppressed":
-                    c["coverage"]["suppressed (re-escalation)" if reason == "re-escalation"
+                    c["coverage"][f"suppressed ({reason})" if reason in ("re-escalation", "re-breach")
                                   else "suppressed"] += 1
                 elif expected in ("deescalated", "recovered"):
                     c["coverage"][expected] += 1
@@ -370,7 +381,7 @@ def render(path, rows, bad, sessions, th, th_source, chans, args):
                    "Detected", "Missed", "False alerts", "Detection rate", "Event agreement"], summary)
     L.append("")
     L.append("*Expected alerts* are the toasts the reference rules say should have been shown "
-             "(first breach, escalation, or reminder/re-escalation after the cooldown). *Event agreement* counts cycles "
+             "(first breach, escalation, or reminder/re-escalation/re-breach after the cooldown). *Event agreement* counts cycles "
              "where either side logged an event and both agree. A channel marked NOT EXERCISED "
              "never breached its threshold in this data, so its detection is untested here.")
     L.append("")
