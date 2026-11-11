@@ -10,7 +10,7 @@ CHECK_NETWORK = True
 CHECK_SSD_HEALTH = True
 SCAN_INTERVAL = 2 # Seconds between checks
 
-DEBUG_SENSORS = True
+DEBUG_SENSORS = False
 
 # Telemetry audit log: one CSV row per polling cycle (readings + alert outcomes)
 LOG_TELEMETRY = True
