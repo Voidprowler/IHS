@@ -8,6 +8,42 @@ from PIL import Image, ImageDraw
 import pystray
 
 
+# ---------------------------------------------------------------------------
+# Indicator states. For the three channels that raise alerts (CPU temperature,
+# RAM utilisation, SSD life) the states use the SAME thresholds as the alert
+# logic in main.check_alerts, so the colour and the toast always agree:
+#   green = GOOD, amber = WARNING, red = CRITICAL, grey = no reading.
+# GPU and SSD temperature raise no alerts; they show amber at or above the
+# display limits below and never red.
+# ---------------------------------------------------------------------------
+GOOD, WARNING, CRITICAL = "GOOD", "WARNING", "CRITICAL"
+GPU_TEMP_DISPLAY_LIMIT = 80
+SSD_TEMP_DISPLAY_LIMIT = 70
+STATE_COLOURS = {GOOD: '#00ff00', WARNING: '#ffaa00', CRITICAL: '#ff0000'}
+NO_READING_COLOUR = '#666666'
+
+
+def indicator_state(key, value):
+    """GOOD, WARNING or CRITICAL for one reading, or None when there is no reading."""
+    if value is None:
+        return None
+    if key == 'cpu_temp':
+        if not value:                      # 0 means no reading, as in check_alerts
+            return None
+        if value >= CPU_TEMP_CRITICAL:
+            return CRITICAL
+        return WARNING if value >= CPU_TEMP_WARN else GOOD
+    if key == 'ram_percent':
+        return WARNING if value > RAM_PERCENT_LIMIT else GOOD
+    if key == 'ssd_health':
+        return CRITICAL if value < SSD_HEALTH_CRITICAL else GOOD
+    if key == 'gpu_temp':
+        return WARNING if value >= GPU_TEMP_DISPLAY_LIMIT else GOOD
+    if key == 'ssd_temp':
+        return WARNING if value >= SSD_TEMP_DISPLAY_LIMIT else GOOD
+    return None
+
+
 class SentinelDashboard:
     def __init__(self, sensors=None):
         self.window = tk.Tk()
@@ -81,8 +117,8 @@ class SentinelDashboard:
         self.labels = {}
         metrics = [
             ('CPU Temperature', 'cpu_temp', '°C', CPU_TEMP_CRITICAL),
-            ('GPU Temperature', 'gpu_temp', '°C', 80),
-            ('Drive Temp', 'ssd_temp', '°C', 70),
+            ('GPU Temperature', 'gpu_temp', '°C', GPU_TEMP_DISPLAY_LIMIT),
+            ('Drive Temp', 'ssd_temp', '°C', SSD_TEMP_DISPLAY_LIMIT),
             ('Drive Health', 'ssd_health', '%', 20),
             ('RAM Usage', 'ram_percent', '%', RAM_PERCENT_LIMIT)
         ]
@@ -162,30 +198,10 @@ class SentinelDashboard:
         minimize_btn.place(relx=0.5, rely=0.88, anchor='center')
         
     def get_status_color(self, value, key):
-        """Return color based on value and thresholds"""
-        if value is None:
-            return '#666666'
-        
-        threshold = self.labels[key]['threshold']
-        
-        # For SSD health, lower is worse
-        if key == 'ssd_health':
-            if value < threshold:
-                return '#ff0000'
-            elif value < 50:
-                return '#ffaa00'
-            else:
-                return '#00ff00'
-        
-        # For temps and RAM, higher is worse
-        else:
-            if value >= threshold:
-                return '#ff0000'
-            elif value >= threshold * 0.85:
-                return '#ffaa00'
-            else:
-                return '#00ff00'
-    
+        """Return the colour for a reading, from the shared indicator states"""
+        state = indicator_state(key, value)
+        return STATE_COLOURS.get(state, NO_READING_COLOUR)
+
     def update_stats(self):
         """Fetch and display current stats"""
         stats = self.sensors.get_system_stats()

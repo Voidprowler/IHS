@@ -1,0 +1,52 @@
+2026-11-08 15:14:28  START total=120 warm=35 load=2 rest=1 workers=12
+2026-11-08 15:14:28  PHASE warm-up (sustained load)
+2026-11-08 15:49:28  PHASE cycle 1: load
+2026-11-08 15:51:28  PHASE cycle 1: rest
+2026-11-08 15:52:28  PHASE cycle 2: load
+2026-11-08 15:54:28  PHASE cycle 2: rest
+2026-11-08 15:55:28  PHASE cycle 3: load
+2026-11-08 15:57:28  PHASE cycle 3: rest
+2026-11-08 15:58:28  PHASE cycle 4: load
+2026-11-08 16:00:28  PHASE cycle 4: rest
+2026-11-08 16:01:28  PHASE cycle 5: load
+2026-11-08 16:03:28  PHASE cycle 5: rest
+2026-11-08 16:04:28  PHASE cycle 6: load
+2026-11-08 16:06:28  PHASE cycle 6: rest
+2026-11-08 16:07:28  PHASE cycle 7: load
+2026-11-08 16:09:28  PHASE cycle 7: rest
+2026-11-08 16:10:28  PHASE cycle 8: load
+2026-11-08 16:12:28  PHASE cycle 8: rest
+2026-11-08 16:13:28  PHASE cycle 9: load
+2026-11-08 16:15:28  PHASE cycle 9: rest
+2026-11-08 16:16:28  PHASE cycle 10: load
+2026-11-08 16:18:28  PHASE cycle 10: rest
+2026-11-08 16:19:28  PHASE cycle 11: load
+2026-11-08 16:21:28  PHASE cycle 11: rest
+2026-11-08 16:22:28  PHASE cycle 12: load
+2026-11-08 16:24:28  PHASE cycle 12: rest
+2026-11-08 16:25:28  PHASE cycle 13: load
+2026-11-08 16:27:28  PHASE cycle 13: rest
+2026-11-08 16:28:28  PHASE cycle 14: load
+2026-11-08 16:30:29  PHASE cycle 14: rest
+2026-11-08 16:31:29  PHASE cycle 15: load
+2026-11-08 16:33:29  PHASE cycle 15: rest
+2026-11-08 16:34:29  PHASE cycle 16: load
+2026-11-08 16:36:29  PHASE cycle 16: rest
+2026-11-08 16:37:29  PHASE cycle 17: load
+2026-11-08 16:39:29  PHASE cycle 17: rest
+2026-11-08 16:40:29  PHASE cycle 18: load
+2026-11-08 16:42:11  STOPPED by user
+2026-11-08 16:42:49  START total=0.0 warm=0.0 load=2 rest=1 workers=12
+2026-11-08 16:42:49  PHASE warm-up (sustained load)
+2026-11-08 16:42:49  PHASE RAM breach
+2026-11-08 16:42:53  RAM at 93.2% - holding for 3 min
+2026-11-08 16:45:53  RAM released
+2026-11-08 16:45:53  PHASE tail (idle)
+2026-11-08 16:47:53  DONE
+2026-11-08 16:51:16  START total=0.0 warm=0.0 load=2 rest=1 workers=12
+2026-11-08 16:51:16  PHASE warm-up (sustained load)
+2026-11-08 16:51:17  PHASE RAM breach
+2026-11-08 16:51:18  RAM at 93.1% - holding for 3 min
+2026-11-08 16:54:19  RAM released
+2026-11-08 16:54:19  PHASE tail (idle)
+2026-11-08 16:59:19  DONE
