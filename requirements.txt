@@ -1,0 +1,18 @@
+# Intelligent Hardware Sentinel - Python 3.11.0, Windows
+# Also needed, not pip packages: LibreHardwareMonitorLib.dll 0.9.6.0 and its companion DLLs,
+# in the same folder as main.py (they are committed in Codes/nvml-build).
+pythonnet==3.0.5
+psutil==7.2.2
+winotify==1.1.0
+
+# Used by the dashboard and its test. Versions were not recorded:
+# run "pip freeze" on the test laptop and pin them here.
+Pillow
+pystray
+
+# Used only by the CPU temperature fallback in sensors.py (WMI thermal zone); needs pywin32.
+# Version not recorded: pin it from "pip freeze" too.
+WMI
+
+# For building the .exe only (see README, "Building the .exe"):
+# pyinstaller

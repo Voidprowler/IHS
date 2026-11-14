@@ -1,0 +1,12 @@
+# PyInstaller output
+build/
+dist/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Files the program writes while it runs
+Codes/nvml-build/sentinel_debug.log
+Codes/nvml-build/sentinel_log.txt
+Codes/nvml-build/sentinel_telemetry.csv

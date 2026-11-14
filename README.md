@@ -2,6 +2,8 @@
 
 A rule-based hardware monitor for Windows laptops, written in Python. It watches five channels (CPU temperature, GPU temperature, SSD temperature, SSD health and RAM utilisation), shows Windows toast notifications for three of them, and writes a one-row-per-cycle telemetry log that a separate script can audit against the alert rules.
 
+![IHS dashboard](dashboard.png)
+
 It is a final-year Systems Engineering capstone project (University of Lagos). It is "intelligent" only in a narrow sense: its alert logic is rule-based, keeps state per channel and severity, and does not learn or predict. SSD health is the life-remaining figure the drive reports through SMART, not a validated predictor of drive failure.
 
 ## What it monitors
@@ -24,12 +26,22 @@ Drives are identified by model, because the library does not return drive letter
 - A drop to a lower severity is logged, with no toast.
 - After three consecutive normal readings the episode ends (recovery). The cooldown timers are kept, so a renewed breach inside the cooldown is withheld, while a breach at a severity that has not notified is notified at once.
 
+## Repository layout
+
+| Path | Contents |
+|---|---|
+| `Codes/nvml-build/` | The final build: source, tests, tools, the build hashes and the evidence folder. Run and test from here |
+| `Codes/nvml-build/evidence/Analysis_report/` | Analysis reports and the raw files of the retest runs (see "Evidence" below) |
+| `Codes/soak_build/` | The build used for the long recordings of 3 to 6 November (before the recovery change), with its hash file `soak_version_hashes.txt` |
+| `dashboard.png` | Screenshot of the dashboard |
+
 ## Requirements
 
 - Windows, with administrator rights (the program offers to relaunch itself as administrator).
-- Python 3.11.0 with: `pythonnet` 3.0.5, `psutil` 7.2.2, `winotify` 1.1.0, `nvidia-ml-py` 13.610.43.
-- `LibreHardwareMonitorLib.dll` 0.9.6.0 in the same folder as `main.py`.
+- Python 3.11.0. Install the packages with `pip install -r requirements.txt`.
+- `LibreHardwareMonitorLib.dll` 0.9.6.0 and its companion DLLs (`HidSharp.dll`, `System.Memory.dll`, `RAMSPDToolkit-NDD.dll`, `System.Runtime.CompilerServices.Unsafe.dll`, `System.Numerics.Vectors.dll`, `DiskInfoToolkit.dll`, `BlackSharp.Core.dll`) are included in `Codes/nvml-build/`, next to `main.py`. They are third-party files from [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (MPL-2.0); the licence text is in `LICENSE-LibreHardwareMonitor.txt`. Their SHA-256 values are in `build_hashes_final.txt`. If you download the repository as a ZIP, Windows may block the DLLs: right-click each file, choose Properties and tick Unblock.
 - Tested on one machine: MSI MS-17E9 (Intel Core i7-10750H, NVIDIA GeForce RTX 2080 Super, two WDC PC SN730 NVMe drives, 15.8 GB RAM), Windows build 10.0.26200. The NVML GPU fallback has not been tested on any other machine.
+- If the program crashes on launch, install the [Microsoft Visual C++ Redistributable (x64)](https://aka.ms/vs/17/release/vc_redist.x64.exe) and try again.
 
 ## Running it
 
@@ -39,7 +51,18 @@ python main.py                 # monitor in the background, toasts and telemetry
 python main.py --dashboard     # the same, with the desktop dashboard
 ```
 
-`Launch_Dashboard.vbs` starts the dashboard without a console window. `Intelligent_Hardware_Sentinel.exe` is a packaged build. [PENDING: state which commit the .exe was built from, or remove it.]
+`Launch_Dashboard.vbs` starts the dashboard without a console window. `Intelligent_Hardware_Sentinel.exe` is a convenience build published on the Releases page ([PENDING: link, commit and SHA-256 after the rebuild]); the report evaluates the Python source above, not the `.exe`. See "Building the .exe" below.
+
+## Building the .exe
+
+```
+pip install pyinstaller
+cd Codes\nvml-build
+pyinstaller Intelligent_Hardware_Sentinel.spec
+Get-FileHash dist\Intelligent_Hardware_Sentinel.exe
+```
+
+This makes one file, `dist\Intelligent_Hardware_Sentinel.exe`, which asks for administrator rights when it starts. `Decepticons.ico` and all the DLLs listed under Requirements must be in the folder. `config.py` is bundled inside the `.exe`, so the thresholds in it cannot be changed without rebuilding. [PENDING: the PyInstaller version used.]
 
 ## Configuration (`config.py`)
 
@@ -94,7 +117,7 @@ It writes `analysis_report.md` and `analysis_mismatches.csv`. The audit replays 
 
 | Recording | Dates | `DEBUG_SENSORS` | Analyzer | Expected result |
 |---|---|---|---|---|
-| Early recording | 1 to 2 Nov 2026 | [PENDING] | either version | CPU 3 of 3, RAM 4 of 4 |
+| Early recording | 1 to 2 Nov 2026 | True | either version | CPU 3 of 3, RAM 4 of 4 |
 | Long recordings (5 sessions, 24,370 cycles) | 3 to 6 Nov | True | soak-build version (SHA-256 starts 118A5095) | CPU 197 of 197, RAM 43 of 43 |
 | Loaded run (2,632 cycles) | 8 Nov | False | final version (starts E047C2BB) | CPU 70 of 70, RAM 6 of 6 |
 | Game run (1,722 cycles) | 8 Nov | False | final version | CPU 20 of 20, RAM 13 of 13 |
@@ -102,13 +125,28 @@ It writes `analysis_report.md` and `analysis_mismatches.csv`. The audit replays 
 
 The long recordings were made before the recovery change, so the final analyzer correctly flags the toasts the earlier code sent for renewed breaches. Do not use it on them.
 
+## Evidence
+
+All under `Codes/nvml-build/evidence/Analysis_report/`:
+
+| Folder or file | Contents |
+|---|---|
+| `run_loaded/` | Analysis report, mismatch list, raw telemetry CSV and log of the loaded run (8 Nov) |
+| `run_game/` | Analysis report, mismatch list and raw telemetry CSV of the game run (8 Nov) |
+| `run_long/` | Analysis report and mismatch list of the long recordings (3 to 6 Nov) |
+| `run_shifted_thresholds/` | Analysis report and mismatch list of the threshold-shifted CPU test (a logic test, not proof that the real threshold is reached) |
+| `load_phases.log` | Phase times of the loaded run |
+| `Battery_report.webp` | Windows battery report |
+| `Hard Disk_comparison/` | Hard Disk Sentinel screenshots of 11 Nov, used to check drive health and temperature |
+
+[PENDING: the raw telemetry files of the long recordings, the shifted-threshold run and the early recording are not in this folder. Add them, or state where they are kept.]
+
 ## Build record
 
-- Final build: commit `90a30bd904284c328d5f3ff51a20373f6387c46a`, which adds the dashboard aligned with the alert thresholds and its test to commit `2ea988eaebf52b495688fefcd2dc24c0ae7c333f`.
+- Final build: the commit tagged `final-build`. It holds every file in `Codes/nvml-build`, including all 22 source and test files (123 tests pass) and the DLLs. Earlier commits did not hold the complete set, so cite the tag, not an earlier commit. Commit `90a30bd904284c328d5f3ff51a20373f6387c46a` added the dashboard aligned with the alert thresholds and its test to commit `2ea988eaebf52b495688fefcd2dc24c0ae7c333f`.
 - Recovery change: commit `5544d8237862f19ca2a8652c5b9f0b40631751af` (tag `t8-build`).
-- SHA-256 of every source file: `build_hashes_final.txt`. The soak-build hashes (6 November) are in `soak_version_hashes.txt`.
+- SHA-256 of every source file: `Codes/nvml-build/build_hashes_final.txt`. The soak-build hashes (6 November) are in `Codes/soak_build/soak_version_hashes.txt`.
 - The long recordings ran with `DEBUG_SENSORS = True`. The earlier `config.py` snapshot committed on 6 November has that setting; the current one has False.
-- The telemetry files (CSV) of the recordings are in `Codes/nvml-build`, and the analysis reports are in `Codes/nvml-build/evidence/Analysis_report`. [PENDING: say where the load phase log, the battery report and the Hard Disk Sentinel screenshots are kept.]
 
 ## Known limitations
 
@@ -117,6 +155,11 @@ The long recordings were made before the recovery change, so the final analyzer 
 - SSD life alerts were tested by injected values only, because neither drive has breached.
 - GPU and SSD temperatures are displayed and logged but never alert. On the test laptop the GPU reading is the memory junction temperature, about 6 C above the die temperature NVML reports.
 - A drive whose firmware reports 0% life as a placeholder would be treated as worn out.
+
+## Built with
+
+- Python
+- [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)
 
 ## Author
 
