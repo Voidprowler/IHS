@@ -1,6 +1,7 @@
 import sys
 import types
 import unittest
+from unittest import mock
 
 # sensors.py needs pythonnet (clr) and psutil; stub them only if missing,
 # so these tests also run on a machine without the hardware bridge.
@@ -37,12 +38,22 @@ def drive(name, ident, life, temp, letters=None, life_name="Remaining Life"):
     return FakeHW("Storage", name, ident, sens, letters)
 
 
+class FakeNvml:
+    def __init__(self, temp=None):
+        self.temp, self.calls = temp, 0
+
+    def read(self):
+        self.calls += 1
+        return self.temp
+
+
 def make(hardware):
     s = HardwareSensors.__new__(HardwareSensors)        # skip the DLL bridge
     s.ohm_enabled, s.wmi_fallback, s._drive_labels = True, True, {}
     s.computer = types.SimpleNamespace(Hardware=hardware)
     s.get_ram_usage = lambda: 50.0
     s.get_cpu_temp_wmi = lambda: None
+    s.nvml = FakeNvml()
     return s
 
 
@@ -106,6 +117,49 @@ class StorageTests(unittest.TestCase):
         gpu = FakeHW("GpuNvidia", "RTX", "/gpu/0", [FakeSensor("Temperature", "GPU Core", 58.7)])
         data = make([cpu, gpu]).get_system_stats()
         self.assertEqual((data["cpu_temp"], data["gpu_temp"]), (61.2, 58.7))
+
+
+    def test_nvml_is_used_when_lhm_has_no_gpu_temperature(self):
+        s = make([drive("D", "/nvme/0", 90, 40)])
+        s.nvml = FakeNvml(61.0)
+        data = s.get_system_stats()
+        self.assertEqual(data["gpu_temp"], 61.0)
+        self.assertTrue(data["gpu_source"].startswith("NVML"))
+
+    def test_nvml_is_not_consulted_when_lhm_reports_the_gpu(self):
+        gpu = FakeHW("GpuNvidia", "NVIDIA RTX", "/gpu/0", [FakeSensor("Temperature", "GPU Core", 58.7)])
+        s = make([gpu])
+        s.nvml = FakeNvml(99.0)
+        data = s.get_system_stats()
+        self.assertEqual(data["gpu_temp"], 58.7)
+        self.assertEqual(s.nvml.calls, 0)
+        self.assertEqual(data["gpu_source"], "LibreHardwareMonitor: NVIDIA RTX / GPU Core")
+
+    def test_force_flag_uses_nvml_even_when_lhm_has_a_value(self):
+        gpu = FakeHW("GpuNvidia", "NVIDIA RTX", "/gpu/0", [FakeSensor("Temperature", "GPU Core", 58.7)])
+        s = make([gpu])
+        s.nvml = FakeNvml(57.0)
+        with mock.patch.object(sensors_module, "GPU_FORCE_NVML", True, create=True):
+            data = s.get_system_stats()
+        self.assertEqual(data["gpu_temp"], 57.0)
+        self.assertTrue(data["gpu_source"].startswith("NVML"))
+
+    def test_no_gpu_anywhere_gives_none_and_no_source(self):
+        data = make([]).get_system_stats()
+        self.assertIsNone(data["gpu_temp"])
+        self.assertIsNone(data["gpu_source"])
+
+    def test_cpu_source_names_the_sensor_used(self):
+        cpu = FakeHW("Cpu", "Intel Core i7", "/cpu/0", [FakeSensor("Temperature", "CPU Package", 61.2)])
+        data = make([cpu]).get_system_stats()
+        self.assertEqual(data["cpu_source"], "LibreHardwareMonitor: Intel Core i7 / CPU Package")
+
+    def test_wmi_fallback_is_labelled_as_a_different_measurement(self):
+        s = make([])
+        s.get_cpu_temp_wmi = lambda: 41.0
+        data = s.get_system_stats()
+        self.assertEqual(data["cpu_temp"], 41.0)
+        self.assertIn("ACPI thermal zone", data["cpu_source"])
 
 
 if __name__ == "__main__":
