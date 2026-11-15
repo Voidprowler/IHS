@@ -5,14 +5,14 @@ pythonnet==3.0.5
 psutil==7.2.2
 winotify==1.1.0
 
-# Used by the dashboard and its test. Versions were not recorded:
-# run "pip freeze" on the test laptop and pin them here.
-Pillow
-pystray
+# Used by the dashboard and its test
+Pillow==9.3.0
+pystray==0.19.5
 
-# Used only by the CPU temperature fallback in sensors.py (WMI thermal zone); needs pywin32.
-# Version not recorded: pin it from "pip freeze" too.
-WMI
+# Used only by the CPU temperature fallback in sensors.py (WMI thermal zone)
+WMI==1.5.1
+pywin32==311
 
 # For building the .exe only (see README, "Building the .exe"):
-# pyinstaller
+# pyinstaller==6.19.0
+# pyinstaller-hooks-contrib==2026.0

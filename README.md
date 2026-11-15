@@ -51,18 +51,30 @@ python main.py                 # monitor in the background, toasts and telemetry
 python main.py --dashboard     # the same, with the desktop dashboard
 ```
 
-`Launch_Dashboard.vbs` starts the dashboard without a console window. `Intelligent_Hardware_Sentinel.exe` is a convenience build published on the Releases page ([PENDING: link, commit and SHA-256 after the rebuild]); the report evaluates the Python source above, not the `.exe`. See "Building the .exe" below.
+### Packaged build (no Python needed)
+
+The `Final_build` release has two files. Download both into the same folder:
+
+| File | SHA-256 |
+|---|---|
+| [`Intelligent_Hardware_Sentinel.exe`](https://github.com/Voidprowler/IHS/releases/download/Final_build/Intelligent_Hardware_Sentinel.exe) | `D9AEAFCD0C5AE134507812A8C1C0FE2FF50F9415082AABE8D30A588F5921043C` |
+| [`Launch_Dashboard.cmd`](https://github.com/Voidprowler/IHS/releases/download/Final_build/Launch_Dashboard.cmd) | `4661A7D0F13B7C25EA14964EBE1635A25EF7CCB2A9D95EB3B70409F8F9F97F91` |
+
+- Double-click `Launch_Dashboard.cmd` to start Sentinel with the dashboard. Windows asks for administrator rights.
+- Double-clicking `Intelligent_Hardware_Sentinel.exe` alone runs the monitor in the background, with toast alerts and no window. To open the dashboard from your own shortcut, add ` --dashboard` after the path in the shortcut's Target box.
+- The `.exe` is not code-signed, so Windows SmartScreen may warn before it runs.
+- It was built from commit `9342a62c6237dcc03508050fce242a023b02268d` (tag `Final_build`) with PyInstaller 6.19.0; see "Building the .exe". The report evaluates the Python source above, not the `.exe`.
 
 ## Building the .exe
 
 ```
-pip install pyinstaller
+pip install pyinstaller==6.19.0
 cd Codes\nvml-build
 pyinstaller Intelligent_Hardware_Sentinel.spec
 Get-FileHash dist\Intelligent_Hardware_Sentinel.exe
 ```
 
-This makes one file, `dist\Intelligent_Hardware_Sentinel.exe`, which asks for administrator rights when it starts. `Decepticons.ico` and all the DLLs listed under Requirements must be in the folder. `config.py` is bundled inside the `.exe`, so the thresholds in it cannot be changed without rebuilding. [PENDING: the PyInstaller version used.]
+This makes one file, `dist\Intelligent_Hardware_Sentinel.exe`, which asks for administrator rights when it starts. `Decepticons.ico` and all the DLLs listed under Requirements must be in the folder. `config.py` is bundled inside the `.exe`, so the thresholds in it cannot be changed without rebuilding. The release `.exe` was built with PyInstaller 6.19.0 (pyinstaller-hooks-contrib 2026.0) in the tested Python environment, using the package versions pinned in `requirements.txt`.
 
 ## Configuration (`config.py`)
 
@@ -143,7 +155,7 @@ All under `Codes/nvml-build/evidence/Analysis_report/`:
 
 ## Build record
 
-- Final build: the commit tagged `final-build`. It holds every file in `Codes/nvml-build`, including all 22 source and test files (123 tests pass) and the DLLs. Earlier commits did not hold the complete set, so cite the tag, not an earlier commit. Commit `90a30bd904284c328d5f3ff51a20373f6387c46a` added the dashboard aligned with the alert thresholds and its test to commit `2ea988eaebf52b495688fefcd2dc24c0ae7c333f`.
+- Final build: the commit tagged `Final_build`. It holds every file in `Codes/nvml-build`, including all 22 source and test files (123 tests pass) and the DLLs. Earlier commits did not hold the complete set, so cite the tag, not an earlier commit. Commit `90a30bd904284c328d5f3ff51a20373f6387c46a` added the dashboard aligned with the alert thresholds and its test to commit `2ea988eaebf52b495688fefcd2dc24c0ae7c333f`.
 - Recovery change: commit `5544d8237862f19ca2a8652c5b9f0b40631751af` (tag `t8-build`).
 - SHA-256 of every source file: `Codes/nvml-build/build_hashes_final.txt`. The soak-build hashes (6 November) are in `Codes/soak_build/soak_version_hashes.txt`.
 - The long recordings ran with `DEBUG_SENSORS = True`. The earlier `config.py` snapshot committed on 6 November has that setting; the current one has False.
