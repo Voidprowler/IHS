@@ -1,9 +1,9 @@
 # Telemetry analysis report
 
-- Input: `..\nvml-build\evidence\Analysis_report\run_long_final_analyzer\sentinel_telemetry_before_fix.csv`
+- Input: `sentinel_telemetry_before_fix.csv`
 - Rows analysed: 24370 in 5 session(s); unreadable rows skipped: 0
 - Span: 2026-11-03 18:18:16 to 2026-11-06 19:47:27 (73.49 h wall-clock, includes gaps between sessions)
-- Thresholds: config.py (not found there, defaults used: SSD_HEALTH_CRITICAL)
+- Thresholds: ..\..\..\..\soak_build\config.py (not found there, defaults used: SSD_HEALTH_CRITICAL)
   - CPU warn >= 80, CPU critical >= 90, RAM warn > 90, SSD life critical < 20
 - Reference rules: cooldown 60 s, recovery after 3 consecutive normal readings, timing tolerance 0.1 s
 
