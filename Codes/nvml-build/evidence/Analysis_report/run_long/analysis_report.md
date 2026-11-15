@@ -1,9 +1,9 @@
 # Telemetry analysis report
 
-- Input: `sentinel_telemetry_before_fix.csv`
+- Input: `..\nvml-build\evidence\Analysis_report\run_long_final_analyzer\sentinel_telemetry_before_fix.csv`
 - Rows analysed: 24370 in 5 session(s); unreadable rows skipped: 0
 - Span: 2026-11-03 18:18:16 to 2026-11-06 19:47:27 (73.49 h wall-clock, includes gaps between sessions)
-- Thresholds: config.py
+- Thresholds: config.py (not found there, defaults used: SSD_HEALTH_CRITICAL)
   - CPU warn >= 80, CPU critical >= 90, RAM warn > 90, SSD life critical < 20
 - Reference rules: cooldown 60 s, recovery after 3 consecutive normal readings, timing tolerance 0.1 s
 
@@ -17,60 +17,52 @@ Loop-number discontinuities within sessions: 0; intervals longer than 3x the med
 ## Alert channels: summary
 | Channel | Valid cycles | No reading | Breach cycles | Expected alerts | Detected | Missed | False alerts | Detection rate | Event agreement |
 |---|---|---|---|---|---|---|---|---|---|
-| cpu_temp | 24370 | 0 | 1513 | 149 | 146 | 3 | 51 | 146/149 = 98.0% | 1594/1648 = 96.7% |
-| ram | 24370 | 0 | 966 | 42 | 41 | 1 | 2 | 41/42 = 97.6% | 972/975 = 99.7% |
+| cpu_temp | 24370 | 0 | 1513 | 197 | 197 | 0 | 0 | 197/197 = 100.0% | 1648/1648 = 100.0% |
+| ram | 24370 | 0 | 966 | 43 | 43 | 0 | 0 | 43/43 = 100.0% | 975/975 = 100.0% |
 | ssd_health | 24370 | 0 | 0 | 0 | 0 | 0 | 0 | NOT EXERCISED | n/a |
 
-*Expected alerts* are the toasts the reference rules say should have been shown (first breach, escalation, or reminder/re-escalation/re-breach after the cooldown). *Event agreement* counts cycles where either side logged an event and both agree. A channel marked NOT EXERCISED never breached its threshold in this data, so its detection is untested here.
+*Expected alerts* are the toasts the reference rules say should have been shown (first breach, escalation, or reminder/re-escalation after the cooldown). *Event agreement* counts cycles where either side logged an event and both agree. A channel marked NOT EXERCISED never breached its threshold in this data, so its detection is untested here.
 
 ### cpu_temp
 Observed range 48 to 94 (mean 66.3).
-Detection 146/149 = 98.0%; false alerts 51 in 24221 cycles with no alert expected (0.21%).
+Detection 197/197 = 100.0%; false alerts 0 in 24173 cycles with no alert expected (0.00%).
 Delivery failures logged: 0; timing-boundary cases accepted: 0; no-reading cycles during an active alert: 0.
 
 | Rule path exercised (per reference) | Cycles |
 |---|---|
 | alert sent: escalation | 1 |
-| alert sent: first | 4 |
-| alert sent: re-breach | 82 |
+| alert sent: first | 135 |
 | alert sent: re-escalation | 23 |
-| alert sent: reminder | 39 |
+| alert sent: reminder | 38 |
 | deescalated | 142 |
 | recovered | 135 |
-| suppressed | 1055 |
-| suppressed (re-breach) | 49 |
+| suppressed | 1056 |
 | suppressed (re-escalation) | 118 |
 
 | Reference expected | Tool logged | Cycles |
 |---|---|---|
 | deescalated | deescalated | 142 |
 | recovered | recovered | 135 |
-| sent | sent | 146 |
-| sent | suppressed | 3 |
-| suppressed | sent | 51 |
-| suppressed | suppressed | 1171 |
+| sent | sent | 197 |
+| suppressed | suppressed | 1174 |
 
 ### ram
 Observed range 37.6 to 99 (mean 57.1).
-Detection 41/42 = 97.6%; false alerts 2 in 24328 cycles with no alert expected (0.01%).
+Detection 43/43 = 100.0%; false alerts 0 in 24327 cycles with no alert expected (0.00%).
 Delivery failures logged: 0; timing-boundary cases accepted: 0; no-reading cycles during an active alert: 0.
 
 | Rule path exercised (per reference) | Cycles |
 |---|---|
-| alert sent: first | 3 |
-| alert sent: re-breach | 4 |
-| alert sent: reminder | 35 |
+| alert sent: first | 9 |
+| alert sent: reminder | 34 |
 | recovered | 9 |
-| suppressed | 922 |
-| suppressed (re-breach) | 2 |
+| suppressed | 923 |
 
 | Reference expected | Tool logged | Cycles |
 |---|---|---|
 | recovered | recovered | 9 |
-| sent | sent | 41 |
-| sent | suppressed | 1 |
-| suppressed | sent | 2 |
-| suppressed | suppressed | 922 |
+| sent | sent | 43 |
+| suppressed | suppressed | 923 |
 
 ### ssd_health
 Observed range 85 to 99 (mean 87.8).
@@ -97,28 +89,5 @@ alert_ms covers the whole alert check for the cycle, including toast display.
 | ssd_temp | 24370 | 0 | 46 | 54.1 | 73 | whole numbers |
 
 ## Disagreements between tool and reference
-57 cycle(s) disagree (full list in analysis_mismatches.csv). One logic defect can cascade into later cycles, so start with the earliest:
-
-| Session | Loop | Time | Channel | Value | Expected | Logged |
-|---|---|---|---|---|---|---|
-| 1 | 75 | 2026-11-03T18:21:10.803 | cpu_temp | 80.0 | suppressed | sent |
-| 1 | 85 | 2026-11-03T18:21:34.505 | cpu_temp | 80.0 | suppressed | sent |
-| 1 | 91 | 2026-11-03T18:21:48.702 | cpu_temp | 80.0 | suppressed | sent |
-| 1 | 173 | 2026-11-03T18:25:02.036 | ram | 90.1 | suppressed | sent |
-| 1 | 183 | 2026-11-03T18:25:25.486 | ram | 91.5 | sent | suppressed |
-| 2 | 2310 | 2026-11-04T21:47:40.588 | cpu_temp | 80.0 | suppressed | sent |
-| 2 | 3167 | 2026-11-04T22:21:04.846 | cpu_temp | 80.0 | suppressed | sent |
-| 3 | 2881 | 2026-11-05T17:46:19.964 | cpu_temp | 80.0 | suppressed | sent |
-| 3 | 2892 | 2026-11-05T17:46:45.910 | cpu_temp | 80.0 | suppressed | sent |
-| 3 | 2944 | 2026-11-05T17:48:48.562 | cpu_temp | 80.0 | suppressed | sent |
-| 3 | 2994 | 2026-11-05T17:50:45.555 | ram | 90.3 | suppressed | sent |
-| 3 | 6393 | 2026-11-05T20:12:26.522 | cpu_temp | 81.0 | suppressed | sent |
-| 3 | 7196 | 2026-11-05T20:43:38.123 | cpu_temp | 80.0 | suppressed | sent |
-| 3 | 7490 | 2026-11-05T20:55:03.524 | cpu_temp | 80.0 | suppressed | sent |
-| 3 | 7520 | 2026-11-05T20:56:13.549 | cpu_temp | 80.0 | suppressed | sent |
-| 3 | 7524 | 2026-11-05T20:56:22.881 | cpu_temp | 80.0 | suppressed | sent |
-| 3 | 7528 | 2026-11-05T20:56:32.212 | cpu_temp | 80.0 | suppressed | sent |
-| 3 | 7534 | 2026-11-05T20:56:46.214 | cpu_temp | 80.0 | suppressed | sent |
-| 3 | 7589 | 2026-11-05T20:58:54.735 | cpu_temp | 82.0 | suppressed | sent |
-| 3 | 7626 | 2026-11-05T21:00:21.189 | cpu_temp | 81.0 | suppressed | sent |
+None. Every logged alert event matches the reference rules.
 
